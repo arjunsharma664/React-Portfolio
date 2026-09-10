@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import emailjs from "@emailjs/browser";
@@ -11,7 +10,7 @@ const Contact = () => {
   const {
     register,
     handleSubmit,
-    reset,  
+    reset,
     formState: { errors },
   } = useForm({
     mode: "onBlur",
@@ -24,10 +23,13 @@ const Contact = () => {
   });
 
   const onSubmit = async (data) => {
+    if (loading) return;
+
     setLoading(true);
     setStatus("");
 
     try {
+      // 1. Send contact message to YOUR email
       await emailjs.send(
         "service_aa26qmi",
         "template_ifa69bs",
@@ -42,15 +44,43 @@ const Contact = () => {
         }
       );
 
+      // 2. Send automatic reply to USER
+      await emailjs.send(
+        "service_aa26qmi",
+        "template_92jvbq8",
+        {
+          name: data.name,
+          email: data.email,
+          subject: data.subject,
+          message: data.message,
+        },
+        {
+          publicKey: "YJlyWUEgw-wZx_EpI",
+        }
+      );
+
+      // 3. Save form data locally
+      localStorage.setItem(
+        "contactForm",
+        JSON.stringify({
+          ...data,
+          submittedAt: new Date().toISOString(),
+        })
+      );
+
+      // 4. Clear form
+      reset();
+
+      // 5. Show success message
       setStatus(
         "Message sent successfully! I will get back to you soon."
       );
-
-      reset();
     } catch (error) {
       console.error("EmailJS Error:", error);
 
-      setStatus("Failed to send message. Please try again.");
+      setStatus(
+        "Failed to send message. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -79,6 +109,7 @@ const Contact = () => {
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-6"
           >
+
             {/* Name + Email */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
@@ -94,19 +125,16 @@ const Contact = () => {
                   }`}
                   {...register("name", {
                     required: "Name is required",
-
                     minLength: {
                       value: 3,
                       message:
                         "Name must be at least 3 characters",
                     },
-
                     maxLength: {
                       value: 50,
                       message:
                         "Name cannot exceed 50 characters",
                     },
-
                     pattern: {
                       value: /^[A-Za-z\s]+$/,
                       message:
@@ -134,9 +162,9 @@ const Contact = () => {
                   }`}
                   {...register("email", {
                     required: "Email is required",
-
                     pattern: {
-                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                      value:
+                        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
                       message:
                         "Please enter a valid email address",
                     },
@@ -163,13 +191,11 @@ const Contact = () => {
                 }`}
                 {...register("subject", {
                   required: "Subject is required",
-
                   minLength: {
                     value: 8,
                     message:
                       "Subject must be at least 8 characters",
                   },
-
                   maxLength: {
                     value: 50,
                     message:
@@ -196,13 +222,11 @@ const Contact = () => {
                 }`}
                 {...register("message", {
                   required: "Message is required",
-
                   minLength: {
                     value: 10,
                     message:
                       "Message must be at least 10 characters",
                   },
-
                   maxLength: {
                     value: 1000,
                     message:
@@ -220,7 +244,13 @@ const Contact = () => {
 
             {/* Status */}
             {status && (
-              <p className="text-center text-sm text-zinc-700">
+              <p
+                className={`text-center text-sm ${
+                  status.includes("successfully")
+                    ? "text-green-600"
+                    : "text-red-500"
+                }`}
+              >
                 {status}
               </p>
             )}
@@ -239,6 +269,7 @@ const Contact = () => {
                 )}
               </button>
             </div>
+
           </form>
         </div>
       </div>
@@ -247,4 +278,3 @@ const Contact = () => {
 };
 
 export default Contact;
-
